@@ -58,9 +58,9 @@ class PipeReader(Thread):
 
         while self._running:
             if self._filedescriptor is not None:
-                for line in iter(self._filedescriptor.readline, str('')):
+                for line in iter(self._filedescriptor.readline, ''):
                     # Ignore ffmpeg stderr
-                    if str('ffmpeg version') in line:
+                    if 'ffmpeg version' in line:
                         ignore_line = True
 
                     if not ignore_line:
@@ -167,9 +167,7 @@ class YoutubeDLDownloader(object):
 
         while self._proc_is_alive():
             stdout = self._proc.stdout.readline().rstrip()
-            stdout = convert_item(stdout, to_unicode=True)
-
-            if stdout:
+            if stdout := convert_item(stdout, to_unicode=True):
                 data_dict = extract_data(stdout)
                 self._extract_info(data_dict)
                 self._hook_data(data_dict)
@@ -198,7 +196,7 @@ class YoutubeDLDownloader(object):
             self._return_code = self.ERROR
 
         if self._proc is not None and self._proc.returncode > 0:
-            self._log('Child process exited with non-zero code: {}'.format(self._proc.returncode))
+            self._log(f'Child process exited with non-zero code: {self._proc.returncode}')
 
         self._last_data_hook()
 
@@ -295,10 +293,7 @@ class YoutubeDLDownloader(object):
 
     def _proc_is_alive(self):
         """Returns True if self._proc is alive else False. """
-        if self._proc is None:
-            return False
-
-        return self._proc.poll() is None
+        return False if self._proc is None else self._proc.poll() is None
 
     def _get_cmd(self, url, options):
         """Build the subprocess command.
@@ -311,12 +306,11 @@ class YoutubeDLDownloader(object):
             Python list that contains the command to execute.
 
         """
-        if os.name == 'nt':
-            cmd = [self.youtubedl_path] + options + [url]
-        else:
-            cmd = ['python', self.youtubedl_path] + options + [url]
-
-        return cmd
+        return (
+            [self.youtubedl_path] + options + [url]
+            if os.name == 'nt'
+            else ['python', self.youtubedl_path] + options + [url]
+        )
 
     def _create_process(self, cmd):
         """Create new subprocess.
@@ -351,7 +345,7 @@ class YoutubeDLDownloader(object):
                                           preexec_fn=preexec,
                                           startupinfo=info)
         except (ValueError, OSError) as error:
-            self._log('Failed to start process: {}'.format(ucmd))
+            self._log(f'Failed to start process: {ucmd}')
             self._log(convert_item(str(error), to_unicode=True))
 
 

@@ -59,7 +59,7 @@ class OptionHolder(object):
         if self.requirements is None:
             return True
 
-        return any([options_dict[req] for req in self.requirements])
+        return any(options_dict[req] for req in self.requirements)
 
 
 class OptionsParser(object):
@@ -146,17 +146,18 @@ class OptionsParser(object):
                 value = options_dict[option.name]
 
                 if value != option.default_value:
-                    options_list.append("-x")
-                    options_list.append(option.flag)
-                    options_list.append(to_string(value))
-
+                    options_list.extend(("-x", option.flag, to_string(value)))
                     #NOTE Temp fix
                     # If current 'audio_quality' is not the default one ('5')
                     # then append the audio quality flag and value to the
                     # options list
                     if options_dict["audio_quality"] != "5":
-                        options_list.append("--audio-quality")
-                        options_list.append(to_string(options_dict["audio_quality"]))
+                        options_list.extend(
+                            (
+                                "--audio-quality",
+                                to_string(options_dict["audio_quality"]),
+                            )
+                        )
 
             elif option.name == "audio_quality":
                 # If the '--audio-quality' is not already in the options list
@@ -164,14 +165,13 @@ class OptionsParser(object):
                 # We don't have to worry for the sequence in which the code
                 # will be executed since the 'audio_quality' option is placed
                 # after the 'audio_format' option in the self._ydl_options list
-                if option.flag not in options_list:
-                    if option.check_requirements(options_dict):
-                        value = options_dict[option.name]
+                if option.flag not in options_list and option.check_requirements(
+                    options_dict
+                ):
+                    value = options_dict[option.name]
 
-                        if value != option.default_value:
-                            options_list.append(option.flag)
-                            options_list.append(to_string(value))
-
+                    if value != option.default_value:
+                        options_list.extend((option.flag, to_string(value)))
             elif option.check_requirements(options_dict):
                 value = options_dict[option.name]
 

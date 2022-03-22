@@ -162,7 +162,7 @@ def open_file(file_path):
 
 def encode_tuple(tuple_to_encode):
     """Turn size tuple into string. """
-    return '%s/%s' % (tuple_to_encode[0], tuple_to_encode[1])
+    return f'{tuple_to_encode[0]}/{tuple_to_encode[1]}'
 
 
 def decode_tuple(encoded_tuple):
@@ -216,13 +216,12 @@ def shutdown_sys(password=None):
         # Hide subprocess window
         info = subprocess.STARTUPINFO()
         info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    elif password:
+        _stdin = subprocess.PIPE
+        password = ('%s\n' % password).encode(encoding)
+        cmd = ['sudo', '-S', '/sbin/shutdown', '-h', 'now']
     else:
-        if password:
-            _stdin = subprocess.PIPE
-            password = ('%s\n' % password).encode(encoding)
-            cmd = ['sudo', '-S', '/sbin/shutdown', '-h', 'now']
-        else:
-            cmd = ['/sbin/shutdown', '-h', 'now']
+        cmd = ['/sbin/shutdown', '-h', 'now']
 
     cmd = [item.encode(encoding, 'ignore') for item in cmd]
 
@@ -239,7 +238,7 @@ def shutdown_sys(password=None):
 def to_string(data):
     """Convert data to string.
     Works for both Python2 & Python3. """
-    return '%s' % data
+    return f'{data}'
 
 
 def get_time(seconds):
@@ -282,11 +281,10 @@ def get_locale_file():
         os.path.join(os_path_dirname(__file__), DIR_NAME),
     ]
 
-    for directory in SEARCH_DIRS:
-        if os_path_isdir(directory):
-            return directory
-
-    return None
+    return next(
+        (directory for directory in SEARCH_DIRS if os_path_isdir(directory)),
+        None,
+    )
 
 
 def get_icon_file():
@@ -296,11 +294,11 @@ def get_icon_file():
         The path to youtube-dlg icon file if exists, else returns None.
 
     """
-    ICON_NAME = "youtube-dl-gui.png"
-
     pixmaps_dir = get_pixmaps_dir()
 
     if pixmaps_dir is not None:
+        ICON_NAME = "youtube-dl-gui.png"
+
         icon_file = os.path.join(pixmaps_dir, ICON_NAME)
 
         if os_path_exists(icon_file):
@@ -332,12 +330,14 @@ def get_pixmaps_dir():
 
 def to_bytes(string):
     """Convert given youtube-dl size string to bytes."""
-    value = 0.0
-
-    for index, metric in enumerate(reversed(FILESIZE_METRICS)):
-        if metric in string:
-            value = float(string.split(metric)[0])
-            break
+    value = next(
+        (
+            float(string.split(metric)[0])
+            for metric in reversed(FILESIZE_METRICS)
+            if metric in string
+        ),
+        0.0,
+    )
 
     exponent = index * (-1) + (len(FILESIZE_METRICS) - 1)
 
@@ -346,11 +346,7 @@ def to_bytes(string):
 
 def format_bytes(bytes):
     """Format bytes to youtube-dl size output strings."""
-    if bytes == 0.0:
-        exponent = 0
-    else:
-        exponent = int(math.log(bytes, KILO_SIZE))
-
+    exponent = 0 if bytes == 0.0 else int(math.log(bytes, KILO_SIZE))
     suffix = FILESIZE_METRICS[exponent]
     output_value = bytes / (KILO_SIZE ** exponent)
 
@@ -364,11 +360,10 @@ def build_command(options_list, url):
         """Wrap option with double quotes if it contains special symbols."""
         special_symbols = [" ", "(", ")"]
 
-        for symbol in special_symbols:
-            if symbol in option:
-                return "\"{}\"".format(option)
-
-        return option
+        return next(
+            (f'"{option}"' for symbol in special_symbols if symbol in option),
+            option,
+        )
 
     # If option has special symbols wrap it with double quotes
     # Probably not the best solution since if the option already contains

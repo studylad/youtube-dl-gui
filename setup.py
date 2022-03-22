@@ -120,11 +120,7 @@ class BuildTranslations(cmd.Command):
         self.search_pattern = None
 
     def finalize_options(self):
-        if on_windows():
-            self.exec_name = "msgfmt.exe"
-        else:
-            self.exec_name = "msgfmt"
-
+        self.exec_name = "msgfmt.exe" if on_windows() else "msgfmt"
         self.search_pattern = os.path.join(__packagename__, "locale", "*", "LC_MESSAGES", "youtube_dl_gui.po")
 
     def run(self):
@@ -132,10 +128,10 @@ class BuildTranslations(cmd.Command):
             mo_file = po_file.replace(".po", ".mo")
 
             try:
-                log.info("building MO file for '{}'".format(po_file))
+                log.info(f"building MO file for '{po_file}'")
                 call([self.exec_name, "-o", mo_file, po_file])
             except OSError:
-                log.error("could not locate file '{}', exiting...".format(self.exec_name))
+                log.error(f"could not locate file '{self.exec_name}', exiting...")
                 sys.exit(1)
 
 
@@ -194,10 +190,7 @@ cmdclass = {
 
 
 def linux_setup():
-    scripts = []
     data_files = []
-    package_data = {}
-
     # Add hicolor icons
     for path in glob.glob("youtube_dl_gui/data/icons/hicolor/*x*"):
         size = os.path.basename(path)
@@ -207,54 +200,43 @@ def linux_setup():
 
         data_files.append((dst, [src]))
 
-    # Add fallback icon, see issue #14
-    data_files.append(
-        ("share/pixmaps", ["youtube_dl_gui/data/pixmaps/youtube-dl-gui.png"])
+    data_files.extend(
+        (
+            (
+                "share/pixmaps",
+                ["youtube_dl_gui/data/pixmaps/youtube-dl-gui.png"],
+            ),
+            ("share/man/man1", ["youtube-dl-gui.1"]),
+        )
     )
 
-    # Add man page
-    data_files.append(
-        ("share/man/man1", ["youtube-dl-gui.1"])
-    )
+    package_data = {
+        __packagename__: ["data/pixmaps/*.png", "locale/*/LC_MESSAGES/*.mo"]
+    }
 
-    # Add pixmaps icons (*.png) & i18n files
-    package_data[__packagename__] = [
-        "data/pixmaps/*.png",
-        "locale/*/LC_MESSAGES/*.mo"
-    ]
-
-    # Add scripts
-    scripts.append("build/_scripts/youtube-dl-gui")
-
-    setup_params = {
+    scripts = ["build/_scripts/youtube-dl-gui"]
+    return {
         "scripts": scripts,
         "data_files": data_files,
         "package_data": package_data
     }
 
-    return setup_params
-
 
 def windows_setup():
     def normal_setup():
-        package_data = {}
+        package_data = {
+            __packagename__: [
+                "data\\pixmaps\\*.png",
+                "locale\\*\\LC_MESSAGES\\*.mo",
+            ]
+        }
 
-        # Add pixmaps icons (*.png) & i18n files
-        package_data[__packagename__] = [
-            "data\\pixmaps\\*.png",
-            "locale\\*\\LC_MESSAGES\\*.mo"
-        ]
 
-        setup_params = {
+        return {
             "package_data": package_data
         }
 
-        return setup_params
-
     def py2exe_setup():
-        windows = []
-        data_files = []
-
         # py2exe dependencies & options
         # TODO change directory for ffmpeg.exe & ffprobe.exe
         dependencies = [
@@ -268,13 +250,10 @@ def windows_setup():
                          "wx.lib.pubsub.core.*",
                          "wx.lib.pubsub.core.arg1.*"]
         }
-        #############################################
-
-        # Add py2exe deps & pixmaps icons (*.png)
-        data_files.extend([
+        data_files = [
             ("", dependencies),
             ("data\\pixmaps", glob.glob("youtube_dl_gui\\data\\pixmaps\\*.png")),
-        ])
+        ]
 
         # We have to manually add the translation files since py2exe cant do it
         for lang in os.listdir("youtube_dl_gui\\locale"):
@@ -283,19 +262,20 @@ def windows_setup():
 
             data_files.append((dst, [src]))
 
-        # Add GUI executable details
-        windows.append({
-            "script": "build\\_scripts\\youtube-dl-gui",
-            "icon_resources": [(0, "youtube_dl_gui\\data\\pixmaps\\youtube-dl-gui.ico")]
-        })
+        windows = [
+            {
+                "script": "build\\_scripts\\youtube-dl-gui",
+                "icon_resources": [
+                    (0, "youtube_dl_gui\\data\\pixmaps\\youtube-dl-gui.ico")
+                ],
+            }
+        ]
 
-        setup_params = {
+        return {
             "windows": windows,
             "data_files": data_files,
             "options": {"py2exe": options}
         }
-
-        return setup_params
 
     if PY2EXE:
         return py2exe_setup()
@@ -303,11 +283,7 @@ def windows_setup():
     return normal_setup()
 
 
-if on_windows():
-    params = windows_setup()
-else:
-    params = linux_setup()
-
+params = windows_setup() if on_windows() else linux_setup()
 setup(
     author              = __author__,
     name                = __appname__,

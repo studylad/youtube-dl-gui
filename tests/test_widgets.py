@@ -38,7 +38,7 @@ class TestListBoxWithHeaders(unittest.TestCase):
         self.listbox = ListBoxWithHeaders(self.frame)
 
         self.listbox.add_header("Header")
-        self.listbox.add_items(["item%s" % i for i in xrange(10)])
+        self.listbox.add_items([f"item{i}" for i in xrange(10)])
 
     def tearDown(self):
         self.frame.Destroy()
@@ -182,7 +182,7 @@ class TestCustomComboBox(unittest.TestCase):
 
         # Call directly the ListBoxWithHeaders methods
         self.combobox.listbox.GetControl().add_header("Header")
-        self.combobox.listbox.GetControl().add_items(["item%s" % i for i in xrange(10)])
+        self.combobox.listbox.GetControl().add_items([f"item{i}" for i in xrange(10)])
 
     def tearDown(self):
         self.frame.Destroy()

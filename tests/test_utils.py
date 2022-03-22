@@ -118,13 +118,13 @@ class TestConvertItem(unittest.TestCase):
 
     def setUp(self):
         self.input_list_u = ["v1", "v2", "v3"]
-        self.input_list_s = [str("v1"), str("v2"), str("v3")]
+        self.input_list_s = ["v1", "v2", "v3"]
 
         self.input_tuple_u = ("v1", "v2", "v3")
-        self.input_tuple_s = (str("v1"), str("v2"), str("v3"))
+        self.input_tuple_s = "v1", "v2", "v3"
 
         self.input_dict_u = {"k1": "v1", "k2": "v2"}
-        self.input_dict_s = {str("k1"): str("v1"), str("k2"): str("v2")}
+        self.input_dict_s = {"k1": "v1", "k2": "v2"}
 
     def check_iter(self, iterable, iter_type, is_unicode):
         check_type = unicode if is_unicode else str
@@ -146,10 +146,10 @@ class TestConvertItem(unittest.TestCase):
         self.assertIsInstance(utils.convert_item("test", True), unicode)
 
     def test_convert_item_str_unicode(self):
-        self.assertIsInstance(utils.convert_item(str("test"), True), unicode)
+        self.assertIsInstance(utils.convert_item("test", True), unicode)
 
     def test_convert_item_str_str(self):
-        self.assertIsInstance(utils.convert_item(str("test")), str)
+        self.assertIsInstance(utils.convert_item("test"), str)
 
     def test_convert_item_list_empty(self):
         self.assertEqual(len(utils.convert_item([])), 0)

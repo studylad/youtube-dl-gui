@@ -193,10 +193,13 @@ class DownloadItem(object):
         if "path" in stats_dict:
             self.path = stats_dict["path"]
 
-        if "filesize" in stats_dict:
-            if stats_dict["percent"] == "100%" and len(self.filesizes) < len(self.filenames):
-                filesize = stats_dict["filesize"].lstrip("~")  # HLS downloader etc
-                self.filesizes.append(to_bytes(filesize))
+        if (
+            "filesize" in stats_dict
+            and stats_dict["percent"] == "100%"
+            and len(self.filesizes) < len(self.filenames)
+        ):
+            filesize = stats_dict["filesize"].lstrip("~")  # HLS downloader etc
+            self.filesizes.append(to_bytes(filesize))
 
         if "status" in stats_dict:
             # If we are post processing try to calculate the size of
@@ -512,19 +515,11 @@ class DownloadManager(Thread):
             self.parent.update_thread = None
 
     def _get_worker(self):
-        for worker in self._workers:
-            if worker.available():
-                return worker
-
-        return None
+        return next((worker for worker in self._workers if worker.available()), None)
 
     def _jobs_done(self):
         """Returns True if the workers have finished their jobs else False. """
-        for worker in self._workers:
-            if not worker.available():
-                return False
-
-        return True
+        return all(worker.available() for worker in self._workers)
 
     def _youtubedl_path(self):
         """Returns the path to youtube-dl binary. """
@@ -599,17 +594,12 @@ class Worker(Thread):
                 #options = self._options_parser.parse(self.opt_manager.options)
                 ret_code = self._downloader.download(self._data['url'], self._options)
 
-                if (ret_code == YoutubeDLDownloader.OK or
-                        ret_code == YoutubeDLDownloader.ALREADY or
-                        ret_code == YoutubeDLDownloader.WARNING):
+                if ret_code in [
+                    YoutubeDLDownloader.OK,
+                    YoutubeDLDownloader.ALREADY,
+                    YoutubeDLDownloader.WARNING,
+                ]:
                     self._successful += 1
-
-                # Ask GUI for name updates
-                #self._talk_to_gui('receive', {'source': 'filename', 'dest': 'new_filename'})
-
-                # Wait until you get a reply
-                #while self._wait_for_reply:
-                    #time.sleep(self.WAIT_TIME)
 
                 self._reset()
 

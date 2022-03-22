@@ -63,11 +63,7 @@ class ListBoxWithHeaders(wx.ListBox):
     def _disable_header_selection(self, event):
         """Stop event propagation if the selected item is a header."""
         row = self.HitTest(event.GetPosition())
-        event_skip = True
-
-        if row != wx.NOT_FOUND and self.GetString(row) in self.__headers:
-            event_skip = False
-
+        event_skip = row == wx.NOT_FOUND or self.GetString(row) not in self.__headers
         event.Skip(event_skip)
 
     def _on_listbox(self, event):
@@ -281,7 +277,7 @@ class CustomComboBox(wx.Panel):
             size=wx.DefaultSize, choices=[], style=0, validator=wx.DefaultValidator, name=NAME):
         super(CustomComboBox, self).__init__(parent, id, pos, size, 0, name)
 
-        assert style == self.CB_READONLY or style == 0
+        assert style in [self.CB_READONLY, 0]
 
         # Create components
         self.textctrl = wx.TextCtrl(self, wx.ID_ANY, style=style, validator=validator)

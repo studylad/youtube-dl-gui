@@ -9,6 +9,7 @@ Script to automatically check PO files
 
 """
 
+
 from __future__ import unicode_literals
 
 import os
@@ -31,7 +32,7 @@ WTIME = 2.0  # Time in seconds to wait between requests to avoid ban
 
 PACKAGE = "youtube_dl_gui"
 
-PO_FILENAME = "{}.po".format(PACKAGE)
+PO_FILENAME = f"{PACKAGE}.po"
 
 LOCALE_PATH_TMPL = os.path.join(PACKAGE, "locale", "{lang}", "LC_MESSAGES", PO_FILENAME)
 
@@ -71,7 +72,7 @@ class UTC_Offset_Timezone(tzinfo):
         """Parse the offset string into seconds."""
 
         if len(offset_string) != 5:
-            raise ValueError("Invalid length for offset string ({})".format(offset_string))
+            raise ValueError(f"Invalid length for offset string ({offset_string})")
 
         hours = offset_string[1:3]
         minutes = offset_string[3:5]
@@ -114,7 +115,7 @@ def parse_date(date_string):
 
 def my_print(msg, char="*", value=None, exit=False):
     """Print 'msg', debug 'value' and exit if 'exit' is True."""
-    print("[{}] {}".format(char, msg))
+    print(f"[{char}] {msg}")
 
     if value is not None:
         print("\tvalue= \"{}\"".format(value))
@@ -172,7 +173,7 @@ def main(args):
     if "Language" in po_headers and po_headers["Language"] != args.language:
         pwarn("'Language' header does not match with the given language", po_headers["Language"], args.werror)
 
-    pinfo("Last-Translator: {}".format(po_headers["Last-Translator"]))
+    pinfo(f'Last-Translator: {po_headers["Last-Translator"]}')
 
     # check translations
     if args.only_headers:
@@ -183,18 +184,13 @@ def main(args):
     pot_msgid = [entry.msgid for entry in pot_file]
     po_msgid = [entry.msgid for entry in po_file]
 
-    # lists to hold reports
-    missing_msgid = []
     not_translated = []
     same_msgstr = []
     with_typo = []
     verify_trans = []
     fuzzy_trans = po_file.fuzzy_entries()
 
-    for msgid in pot_msgid:
-        if msgid not in po_msgid:
-            missing_msgid.append(msgid)
-
+    missing_msgid = [msgid for msgid in pot_msgid if msgid not in po_msgid]
     # Init translator only if the '--no-translate' flag is NOT set
     translator = None
     if not args.no_translate:
@@ -203,7 +199,7 @@ def main(args):
         # Set source language for GoogleTranslator
         if args.tlang is not None:
             src_lang = args.tlang
-            pinfo("Forcing '{}' as the translator's source language".format(src_lang))
+            pinfo(f"Forcing '{src_lang}' as the translator's source language")
         else:
             # Get a valid source language for Google
             # for example convert 'ar_SA' to 'ar' or 'zh_CN' to 'zh-CN'
@@ -212,8 +208,8 @@ def main(args):
             if src_lang not in translator._lang_dict:
                 src_lang = src_lang.replace("_", "-")
 
-                if src_lang not in translator._lang_dict:
-                    src_lang = src_lang.split("-")[0]
+            if src_lang not in translator._lang_dict:
+                src_lang = src_lang.split("-")[0]
 
     # Keep entries that need further analysis using the translator
     further_analysis = []
@@ -236,7 +232,7 @@ def main(args):
         eta_seconds = int(round(eta_seconds))
 
         eta = timedelta(seconds=eta_seconds)
-        pinfo("Approximate time to check translations online: {}".format(eta))
+        pinfo(f"Approximate time to check translations online: {eta}")
 
         # Pass translations as a list since GoogleTranslator can handle them
         words_dict = translator.get_info_dict([entry.msgstr for entry in further_analysis], "en", src_lang)
@@ -251,13 +247,10 @@ def main(args):
 
                 if word_dict["translation"].lower() != entry.msgid.lower():
 
-                    found = False
-
-                    # Check verbs, nouns, adverbs, etc..
-                    for key in word_dict["extra"]:
-                        if entry.msgid.lower() in word_dict["extra"][key].keys():
-                            found = True
-                            break
+                    found = any(
+                        entry.msgid.lower() in word_dict["extra"][key].keys()
+                        for key in word_dict["extra"]
+                    )
 
                     if not found:
                         verify_trans.append((entry, word_dict["translation"]))
@@ -269,38 +262,41 @@ def main(args):
         print("Missing msgids")
 
         for msgid in missing_msgid:
-            print("  \"{}\"".format(msgid))
+            print(f'  "{msgid}"')
 
     if not_translated:
         print("Not translated")
 
         for entry in not_translated:
-            print("  line: {} msgid: \"{}\"".format(entry.linenum, entry.msgid))
+            print(f'  line: {entry.linenum} msgid: "{entry.msgid}"')
 
     if same_msgstr:
         print("Same msgstr")
 
         for entry in same_msgstr:
-            print("  line: {} msgid: \"{}\"".format(entry.linenum, entry.msgid))
+            print(f'  line: {entry.linenum} msgid: "{entry.msgid}"')
 
     if with_typo:
         print("With typo")
 
         for entry in with_typo:
-            print("  line: {} msgid: \"{}\" msgstr: \"{}\"".format(entry.linenum, entry.msgid, entry.msgstr))
+            print(
+                f'  line: {entry.linenum} msgid: "{entry.msgid}" msgstr: "{entry.msgstr}"'
+            )
+
 
     if verify_trans:
         print("Verify translation")
 
         for item in verify_trans:
             entry, translation = item
-            print("  line: {} msgid: \"{}\" trans: \"{}\"".format(entry.linenum, entry.msgid, translation))
+            print(f'  line: {entry.linenum} msgid: "{entry.msgid}" trans: "{translation}"')
 
     if fuzzy_trans:
         print("Fuzzy translations")
 
         for entry in fuzzy_trans:
-            print("  line: {} msgid: \"{}\"".format(entry.linenum, entry.msgid))
+            print(f'  line: {entry.linenum} msgid: "{entry.msgid}"')
 
     total = len(missing_msgid) + len(not_translated) + len(same_msgstr) + len(with_typo) + len(verify_trans) + len(fuzzy_trans)
 
